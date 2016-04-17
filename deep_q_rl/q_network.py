@@ -82,7 +82,7 @@ class DeepQLearner:
         self.terminals_shared = theano.shared(
             np.zeros((batch_size, 1), dtype='int32'),
             broadcastable=(False, True))
-
+        print lasagne.layers.get_output_shape(self.l_out)
         q_vals = lasagne.layers.get_output(self.l_out, states / input_scale)
         
         if self.freeze_interval > 0:
@@ -287,13 +287,13 @@ class DeepQLearner:
         """
         Build a large network consistent with the DeepMind Nature paper.
         """
-        from lasagne.layers import dnn
+        from lasagne.layers import Conv2DLayer
 
         l_in = lasagne.layers.InputLayer(
             shape=(batch_size, num_frames, input_width, input_height)
         )
 
-        l_conv1 = dnn.Conv2DDNNLayer(
+        l_conv1 = Conv2DLayer(
             l_in,
             num_filters=32,
             filter_size=(8, 8),
@@ -303,7 +303,7 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1)
         )
 
-        l_conv2 = dnn.Conv2DDNNLayer(
+        l_conv2 = Conv2DLayer(
             l_conv1,
             num_filters=64,
             filter_size=(4, 4),
@@ -313,7 +313,7 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1)
         )
 
-        l_conv3 = dnn.Conv2DDNNLayer(
+        l_conv3 = Conv2DLayer(
             l_conv2,
             num_filters=64,
             filter_size=(3, 3),
@@ -331,14 +331,28 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1)
         )
 
+        #l_out = lasagne.layers.DenseLayer(
+        #    l_hidden1,
+        #    num_units=output_dim,
+        #    nonlinearity=None,
+        #    W=lasagne.init.HeUniform(),
+        #    b=lasagne.init.Constant(.1)
+        #)
+        
+        l_f = lasagne.layers.FlattenLayer(l_hidden1)
+        l_i = lasagne.layers.ReshapeLayer(l_f, (-1, 1, [1]))
+        l_lstm1 = lasagne.layers.LSTMLayer(
+            l_i, 
+            512,
+            grad_clipping=100
+        )
         l_out = lasagne.layers.DenseLayer(
-            l_hidden1,
+            l_lstm1,
             num_units=output_dim,
             nonlinearity=None,
             W=lasagne.init.HeUniform(),
             b=lasagne.init.Constant(.1)
-        )
-
+        ) 
         return l_out
 
 

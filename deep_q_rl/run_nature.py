@@ -15,15 +15,15 @@ class Defaults:
     # ----------------------
     # Experiment Parameters
     # ----------------------
-    STEPS_PER_EPOCH = 250000
-    EPOCHS = 200
+    STEPS_PER_EPOCH = 1000000
+    EPOCHS = 30#200
     STEPS_PER_TEST = 125000
 
     # ----------------------
     # ALE Parameters
     # ----------------------
-    BASE_ROM_PATH = "../roms/"
-    ROM = 'breakout.bin'
+    BASE_ROM_PATH = "/home/debidatd/ALE/Arcade-Learning-Environment-0.5.1/doc/examples/"
+    ROM = 'Seaquest.bin'
     FRAME_SKIP = 4
     REPEAT_ACTION_PROBABILITY = 0
 
@@ -46,7 +46,7 @@ class Defaults:
     EPSILON_START = 1.0
     EPSILON_MIN = .1
     EPSILON_DECAY = 1000000
-    PHI_LENGTH = 4
+    PHI_LENGTH = 20#4
     UPDATE_FREQUENCY = 4
     REPLAY_MEMORY_SIZE = 1000000
     BATCH_SIZE = 32

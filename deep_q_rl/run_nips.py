@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+# /usr/bin/env python
 """
 Execute a training run of deep-Q-Leaning with parameters that
 are consistent with:
@@ -22,8 +22,8 @@ class Defaults:
     # ----------------------
     # ALE Parameters
     # ----------------------
-    BASE_ROM_PATH = "../roms/"
-    ROM = 'breakout.bin'
+    BASE_ROM_PATH = "/home/debidatd/ALE/Arcade-Learning-Environment-0.5.1/doc/examples/"
+    ROM = 'Breakout.bin'
     FRAME_SKIP = 4
     REPEAT_ACTION_PROBABILITY = 0
 
