@@ -1,0 +1,77 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips15submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+%\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
+
+
+\title{Playing Games with Deep Reinforcement Learning}
+
+
+\author{
+Debidatta Dwibedi\\
+\texttt{debidatd@andrew.cmu.edu} \\
+10701
+\And
+Anirudh Vemula \\
+\texttt{avemula1@andrew.cmu.edu} \\
+16720
+}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\nipsfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+
+\maketitle
+
+%\begin{abstract}
+%The abstract paragraph should be indented 1/2~inch (3~picas) on both left and
+%right-hand margins. Use 10~point type, with a vertical spacing of 11~points.
+%The word \textbf{Abstract} must be centered, bold, and in point size 12. Two
+%line spaces precede the abstract. The abstract must be limited to one
+%paragraph.
+%\end{abstract}
+
+\subsection*{Project Idea}
+Recently, Google Deepmind showcased how deep learning can be used in conjunction with existing reinforcement learning(RL) techniques to play Atari games[1]. Deep learning has been successful in extracting useful features from images, text and audio. Instead of using handcrafted features, they use a Convolutional Neural Network(CNN) to extract visual features to learn good value functions in a reinforcement learning setting. In contrast to the supervised learning setting in which samples are drawn independently from a stationary distribution, in RL the input data is usually highly correlated an not stationary. To tackle the above problem  an experience replay mechanism[2] is used. We want to explore these recent developments in RL by implementing a system that learns to play Atari games using Deep Q Learning.
+
+The video of the game being played from the emulator will serve as input. Our system would emit an action to the emulator which would perform the requested action modifying the current state of the game and occasionally emit a reward(which can be positive or negative). Our reinforcement learning system would expect to learn a policy to successfully play the game.
+
+\subsection*{Dataset}
+
+We will use the \href{http://www.arcadelearningenvironment.org/}{Arcade Learning Environment(ALE)}[4] to play one of the 2600 Atari games. The system allows us to interact with it by actually playing the game and provides access to the video(210 $\times$ 160 RGB video at 60Hz) of the game being played which will serve as visual input for the system. 
+
+\subsection*{ Software}
+We will use \href{http://caffe.berkeleyvision.org/}{Caffe} as the deep learning framework which will provide us with off-the-shelf implementations of CNNs and LSTMs.
+ 
+\subsection*{Teammates and work division}
+Debidatta Dwibedi and Anirudh Vemula will be working on this project. Debidatta Dwibedi is registered in 10701 course and Anirudh Vemula is registered in 16720 course and this will serve as the course project in each member's respective courses.
+
+\subsection*{Midterm milestone}
+We expect to implement the baseline version that uses a CNN in a reinforcement learning setting to play Atari games(like Breakout and Pong). One improvement that researchers have looked into is adding an Long Short Term Memory(LSTM) module to encode sequential visual information[3]. We should be able to implement both the above by April 6. After that, we will look into why this approach fails for some games(like Asterix and Bank Heist) and attempt to improve the system's performance.
+
+\clearpage
+
+\subsection*{References}
+\small{
+[1] Mnih, V., Kavukcuoglu, K., Silver, D., Graves, Alex, A., Ioannis, W., Daan, Riedmiller, M. (2013) Playing atari with deep reinforcement learning. arXiv preprint arXiv:1312.5602
+
+[2] Long-Ji Lin.(1993) Reinforcement learning for robots using neural networks. Technical report, DTIC Document.
+
+[3] Oh, J., Guo, X., Lee, H., Lewis, R. L., Singh, S. (2015). Action-conditional video prediction using deep networks in atari games. In Advances in Neural Information Processing Systems (pp. 2845-2853).
+
+[4] M. G. Bellemare, Y. Naddaf, J. Veness and M. Bowling.(2013) The Arcade Learning Environment: An Evaluation Platform for General Agents. In Journal of Artificial Intelligence Research 47, pp. 253-279. 
+
+\end{document}
