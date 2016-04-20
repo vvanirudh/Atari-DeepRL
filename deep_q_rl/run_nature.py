@@ -23,7 +23,7 @@ class Defaults:
     # ALE Parameters
     # ----------------------
     BASE_ROM_PATH = "/home/debidatd/ALE/Arcade-Learning-Environment-0.5.1/doc/examples/"
-    ROM = 'Seaquest.bin'
+    ROM = 'Frostbite.bin'
     FRAME_SKIP = 4
     REPEAT_ACTION_PROBABILITY = 0
 
@@ -46,7 +46,7 @@ class Defaults:
     EPSILON_START = 1.0
     EPSILON_MIN = .1
     EPSILON_DECAY = 1000000
-    PHI_LENGTH = 20#4
+    PHI_LENGTH = 4
     UPDATE_FREQUENCY = 4
     REPLAY_MEMORY_SIZE = 1000000
     BATCH_SIZE = 32

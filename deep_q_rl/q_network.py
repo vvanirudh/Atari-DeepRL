@@ -18,8 +18,19 @@ import numpy as np
 import theano
 import theano.tensor as T
 from updates import deepmind_rmsprop
+class RepeatLayer(lasagne.layers.Layer):
+    def __init__(self, incoming, n, **kwargs):
+        super(RepeatLayer, self).__init__(incoming, **kwargs)
+        self.n = n
 
+    def get_output_shape_for(self, input_shape):
+        return tuple([input_shape[0], self.n] + list(input_shape[1:]))
 
+    def get_output_for(self, input, **kwargs):
+        tensors = [input]*self.n
+        stacked = theano.tensor.stack(*tensors)
+        dim = [1, 0] + range(2, input.ndim + 1)
+        return stacked.dimshuffle(dim)
 class DeepQLearner:
     """
     Deep Q-learning network using Lasagne.
@@ -82,7 +93,6 @@ class DeepQLearner:
         self.terminals_shared = theano.shared(
             np.zeros((batch_size, 1), dtype='int32'),
             broadcastable=(False, True))
-        print lasagne.layers.get_output_shape(self.l_out)
         q_vals = lasagne.layers.get_output(self.l_out, states / input_scale)
         
         if self.freeze_interval > 0:
@@ -155,8 +165,12 @@ class DeepQLearner:
         if network_type == "nature_cuda":
             return self.build_nature_network(input_width, input_height,
                                              output_dim, num_frames, batch_size)
-        if network_type == "nature_dnn":
+        elif network_type == "nature_dnn":
             return self.build_nature_network_dnn(input_width, input_height,
+                                                 output_dim, num_frames,
+                                                 batch_size)
+        elif network_type == "nature_lstm":
+            return self.build_nature_network_lstm(input_width, input_height,
                                                  output_dim, num_frames,
                                                  batch_size)
         elif network_type == "nips_cuda":
@@ -164,6 +178,10 @@ class DeepQLearner:
                                            output_dim, num_frames, batch_size)
         elif network_type == "nips_dnn":
             return self.build_nips_network_dnn(input_width, input_height,
+                                               output_dim, num_frames,
+                                               batch_size)
+        elif network_type == "nature_dnn_av":
+            return self.build_nature_network_dnn_av(input_width, input_height,
                                                output_dim, num_frames,
                                                batch_size)
         elif network_type == "linear":
@@ -281,7 +299,99 @@ class DeepQLearner:
 
         return l_out
 
+    def build_nature_network_dnn_av(self, input_width, input_height,
+                                               output_dim, num_frames,
+                                               batch_size):
+        """
+        Build a large network consistent with the DeepMind Nature paper.
+        """
+        from lasagne.layers import Conv2DLayer
 
+        l_in = lasagne.layers.InputLayer(
+            shape=(batch_size, num_frames, input_width, input_height)
+        )
+
+        l_conv1 = Conv2DLayer(
+            l_in,
+            num_filters=32,
+            filter_size=(8, 8),
+            stride=(4, 4),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_conv2 = Conv2DLayer(
+            l_conv1,
+            num_filters=64,
+            filter_size=(4, 4),
+            stride=(2, 2),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_conv3 = Conv2DLayer(
+            l_conv2,
+            num_filters=64,
+            filter_size=(3, 3),
+            stride=(1, 1),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden1_adv = lasagne.layers.DenseLayer(
+            l_conv3,
+            num_units=512,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+        
+        l_hidden1_val = lasagne.layers.DenseLayer(
+            l_conv3,
+            num_units=512,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_out_adv = lasagne.layers.DenseLayer(
+            l_hidden1_adv,
+            num_units=output_dim,
+            nonlinearity=None,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+        
+        l_out_val = lasagne.layers.DenseLayer(
+            l_hidden1_val,
+            num_units=1,
+            nonlinearity=None,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+        l_mean_adv = lasagne.layers.FeaturePoolLayer(l_out_adv,
+                                                     output_dim,
+                                                     axis=1,
+                                                     pool_function=theano.tensor.mean)
+        
+        l_rep_mean_adv = RepeatLayer(
+            l_mean_adv,
+            output_dim)
+        l_rep_mean_adv_f = lasagne.layers.FlattenLayer(l_rep_mean_adv, outdim=2)
+        l_adv = lasagne.layers.ElemwiseSumLayer([l_out_adv, l_rep_mean_adv_f], coeffs=[1,-1])
+        l_rep_val = RepeatLayer(
+            l_out_val,
+            output_dim)
+        l_rep_val_f = lasagne.layers.FlattenLayer(l_rep_val, outdim=2)
+        l_out = lasagne.layers.ElemwiseSumLayer([l_rep_val_f, l_adv])
+        
+        return l_out
+
+
+       
     def build_nature_network_dnn(self, input_width, input_height, output_dim,
                                  num_frames, batch_size):
         """
@@ -331,6 +441,67 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1)
         )
 
+        l_out = lasagne.layers.DenseLayer(
+            l_hidden1,
+            num_units=output_dim,
+            nonlinearity=None,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+        
+        return l_out
+
+    def build_nature_network_lstm(self, input_width, input_height, output_dim,
+                                 num_frames, batch_size):
+        """
+        Build a large network consistent with the DeepMind Nature paper.
+        """
+        from lasagne.layers import Conv2DLayer
+
+        l_in = lasagne.layers.InputLayer(
+            shape=(batch_size, num_frames, input_width, input_height)
+        )
+        l_in_reshape = lasagne.layers.ReshapeLayer(l_in,
+            (batch_size*num_frames, 1, input_width, input_height)
+        )
+        l_conv1 = Conv2DLayer(
+            l_in_reshape,
+            num_filters=32,
+            filter_size=(8, 8),
+            stride=(4, 4),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_conv2 = Conv2DLayer(
+            l_conv1,
+            num_filters=64,
+            filter_size=(4, 4),
+            stride=(2, 2),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_conv3 = Conv2DLayer(
+            l_conv2,
+            num_filters=64,
+            filter_size=(3, 3),
+            stride=(1, 1),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden1 = lasagne.layers.DenseLayer(
+            l_conv3,
+            num_units=512,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1)
+        )
+
         #l_out = lasagne.layers.DenseLayer(
         #    l_hidden1,
         #    num_units=output_dim,
@@ -340,7 +511,7 @@ class DeepQLearner:
         #)
         
         l_f = lasagne.layers.FlattenLayer(l_hidden1)
-        l_i = lasagne.layers.ReshapeLayer(l_f, (-1, 1, [1]))
+        l_i = lasagne.layers.ReshapeLayer(l_f, (-1, num_frames, [1]))
         l_lstm1 = lasagne.layers.LSTMLayer(
             l_i, 
             512,
@@ -352,8 +523,10 @@ class DeepQLearner:
             nonlinearity=None,
             W=lasagne.init.HeUniform(),
             b=lasagne.init.Constant(.1)
-        ) 
+        )
         return l_out
+
+
 
 
 
